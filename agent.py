@@ -1,12 +1,12 @@
 import ast
 import operator
 import google.generativeai as genai
+import streamlit as st
 
-# ---- Configure Google Gemini API ----
-genai.configure(api_key="YOUR_API_KEY_HERE")
+# ---- Configure Google Gemini API from Streamlit Secrets ----
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-gemini = genai.GenerativeModel("gemini-1.5-flash")
-
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # ---- Tool: Safe calculator ----
 def calculator_tool(expression):
@@ -43,26 +43,9 @@ class Agent:
         self.memory = []
 
     def respond(self, message, sender_name):
+        if not message.strip():
+            return "Please enter a message."
+
         self.memory.append((sender_name, message))
 
-        # --- Check for calculations ---
-        if message.lower().startswith("calc:"):
-            expr = message[5:].strip()
-            result = calculator_tool(expr)
-            reply = f"The result of '{expr}' is {result}."
-            return reply
-
-        # --- AI response using Google Gemini ---
-        context = "\n".join([f"{s}: {m}" for s, m in self.memory[-5:]])
-
-        prompt = f"""
-        You are {self.name}.
-        Conversation history:
-        {context}
-
-        User message: {message}
-        Respond politely and clearly.
-        """
-
-        gemini_reply = gemini.generate_content(prompt).text
-        return gemini_reply
+        #
