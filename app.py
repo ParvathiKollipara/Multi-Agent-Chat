@@ -1,19 +1,13 @@
 import streamlit as st
-from agent import Agent  # This imports your Agent class from agent.py
+from agent import respond
 
-# Create two agents
-agent1 = Agent("Agent 1")
-agent2 = Agent("Agent 2")
+st.title("Google AI Chatbot")
 
-st.title("🤖 Multi-Agent Conversation Demo")
-
-sender = st.radio("Who is sending the message?", ["Agent 1", "Agent 2"])
-message = st.text_input("Enter your message:")
+user_input = st.text_input("Ask something here...")
 
 if st.button("Send"):
-    if sender == "Agent 1":
-        reply = agent2.respond(message, sender)
+    if user_input.strip():
+        answer = respond(user_input)
+        st.write(answer)
     else:
-        reply = agent1.respond(message, sender)
-
-    st.success(reply)
+        st.warning("Please type something!")
