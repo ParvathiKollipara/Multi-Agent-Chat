@@ -3,8 +3,13 @@ import operator
 import google.generativeai as genai
 import streamlit as st
 
-# ---- Configure Google Gemini API from Streamlit Secrets ----
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+# ---- Configure Google Gemini API ----
+api_key = st.secrets.get("GEMINI_API_KEY")
+
+if not api_key:
+    raise ValueError("❌ ERROR: GEMINI_API_KEY missing in Streamlit Secrets!")
+
+genai.configure(api_key=api_key)
 
 model = genai.GenerativeModel("gemini-1.5-flash")
 
@@ -48,4 +53,33 @@ class Agent:
 
         self.memory.append((sender_name, message))
 
-        #
+        # --- Calculation command ---
+        if message.lower().startswith("calc:"):
+            expr = message[5:].strip()
+            result = calculator_tool(expr)
+            return f"The result of '{expr}' is {result}."
+
+        # --- AI response using Gemini ---
+        context = "\n".join([f"{s}: {m}" for s, m in self.memory[-5:]])
+
+        prompt = f"""
+You are {self.name}.
+Recent conversation:
+{context}
+
+User message: {message}
+
+Reply politely, clearly, and briefly.
+"""
+
+        try:
+            response = model.generate_content(prompt)
+
+            # handle NONE issues
+            if not hasattr(response, "text") or response.text is None:
+                return "⚠️ Gemini returned no output."
+
+            return response.text
+
+        except Exception as e:
+            return f"⚠️ Gemini Error: {str(e)}"
